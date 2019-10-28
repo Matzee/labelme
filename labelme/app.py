@@ -72,6 +72,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.dirty = False
 
         self._noSelectionSlot = False
+        self._only_true = False
 
         # Main widgets and related state.
         self.labelDialog = LabelDialog(
@@ -119,6 +120,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.label_dock.setObjectName(u'Label List')
         self.label_dock.setWidget(self.uniqLabelList)
 
+        self.all_files = QtWidgets.QCheckBox("only true", self)
+        self.all_files.stateChanged.connect(self.set_only_true)
         self.fileSearch = QtWidgets.QLineEdit()
         self.fileSearch.setPlaceholderText('Search Filename')
         self.fileSearch.textChanged.connect(self.fileSearchChanged)
@@ -130,6 +133,7 @@ class MainWindow(QtWidgets.QMainWindow):
         fileListLayout.setContentsMargins(0, 0, 0, 0)
         fileListLayout.setSpacing(0)
         fileListLayout.addWidget(self.fileSearch)
+        fileListLayout.addWidget(self.all_files)
         fileListLayout.addWidget(self.fileListWidget)
         self.file_dock = QtWidgets.QDockWidget(u'File List', self)
         self.file_dock.setObjectName(u'Files')
@@ -693,6 +697,14 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.filename is not None:
             title = '{} - {}*'.format(title, self.filename)
         self.setWindowTitle(title)
+
+
+    def set_only_true(self):
+        if self._only_true == True:
+            self._only_true = False
+        else:
+            self._only_true = True
+        self.fileSearchChanged()
 
     def setClean(self):
         self.dirty = False
@@ -1646,6 +1658,12 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.output_dir:
                 label_file_without_path = osp.basename(label_file)
                 label_file = osp.join(self.output_dir, label_file_without_path)
+        
+            if self._only_true:
+                if not QtCore.QFile.exists(label_file) or \
+                                    not LabelFile.is_label_file(label_file):
+                    continue
+            
             item = QtWidgets.QListWidgetItem(filename)
             item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
             if QtCore.QFile.exists(label_file) and \
